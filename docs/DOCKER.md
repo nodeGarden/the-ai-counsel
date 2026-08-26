@@ -19,6 +19,8 @@ Then open **http://localhost:8001** and configure your API keys in Settings.
 
 Every push to `main` that passes the test suite publishes a fresh `:latest` image, plus a copy tagged with that release's version (e.g. `ghcr.io/jacob-bd/the-ai-counsel:0.11.4`) so you can pin to, or roll back to, a specific release instead of always tracking `latest`.
 
+> **One-time setup for maintainers:** GHCR creates a package as **private** the first time a workflow pushes to it. Until someone makes it public, the `docker pull`/`docker run` command above fails for anyone else with `denied: requested access to the resource is denied`. After the `docker-publish.yml` workflow's first successful run, go to the package on GitHub (your profile or org → **Packages** → `the-ai-counsel`) → **Package settings** → and either set visibility to **Public**, or link the package to this repository so its collaborators inherit access. This is a one-time step; it does not need to be repeated on later pushes.
+
 ### Build from source instead
 
 If you're modifying the code, want to build for an architecture without a published image, or just prefer building locally:
