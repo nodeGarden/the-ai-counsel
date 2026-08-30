@@ -1,14 +1,14 @@
 name: Test & Publish Docker Image
 
 # Runs the backend test suite (blocking) and frontend lint (advisory
-# only, see below) on every push to main (i.e. after a PR is merged).
-# Only if the test suite passes does it build the Docker image with
-# `docker compose build` and push it to GHCR, tagged both `latest` and
-# with the current project version (e.g. `0.11.4`), so past releases
-# stay pullable by version after `latest` moves on.
+# only, see below) on pushes to main and release tags. Only pushes to
+# main publish `latest`; a matching `vX.Y.Z` release tag publishes the
+# corresponding `X.Y.Z` image tag. Manual runs execute tests but never
+# publish an image.
 on:
   push:
     branches: [main]
+    tags: ['v*']
   workflow_dispatch: {}
 
 jobs:
@@ -54,6 +54,12 @@ jobs:
   publish:
     name: Build and push Docker image
     needs: test
+    if: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) }}
+    concurrency:
+      # Serialize writes to each registry tag. GitHub keeps the newest
+      # pending run, while an in-flight publish is allowed to finish.
+      group: docker-publish-${{ github.ref }}
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -72,22 +78,58 @@ jobs:
           version=$(python3 -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])")
           echo "value=$version" >> "$GITHUB_OUTPUT"
 
+      - name: Validate release tag
+        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+        env:
+          PROJECT_VERSION: ${{ steps.version.outputs.value }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          expected_tag="v${PROJECT_VERSION}"
+          if [[ "${RELEASE_TAG}" != "${expected_tag}" ]]; then
+            echo "Release tag ${RELEASE_TAG} does not match project version ${PROJECT_VERSION}."
+            exit 1
+          fi
+
+      - name: Build image with docker compose
+        run: docker compose build
+
+      - name: Verify publish target is current
+        id: publish_gate
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+          PROJECT_VERSION: ${{ steps.version.outputs.value }}
+          REF: ${{ github.ref }}
+        run: |
+          set -euo pipefail
+
+          if [[ "${REF}" == "refs/heads/main" ]]; then
+            current_sha="$(git ls-remote origin refs/heads/main | awk 'NR == 1 { print $1 }')"
+            if [[ "${current_sha}" != "${EXPECTED_SHA}" ]]; then
+              echo "Skipping stale main run ${EXPECTED_SHA}; main is now ${current_sha}."
+              echo "should_publish=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "tag=latest" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${PROJECT_VERSION}" >> "$GITHUB_OUTPUT"
+          fi
+
+          echo "should_publish=true" >> "$GITHUB_OUTPUT"
+
       - name: Log in to GitHub Container Registry
+        if: steps.publish_gate.outputs.should_publish == 'true'
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build image with docker compose
-        run: docker compose build
-
       - name: Tag image for GHCR
+        if: steps.publish_gate.outputs.should_publish == 'true'
         run: |
-          docker tag the-ai-counsel:latest ${{ steps.image.outputs.repo }}:latest
-          docker tag the-ai-counsel:latest ${{ steps.image.outputs.repo }}:${{ steps.version.outputs.value }}
+          docker tag the-ai-counsel:latest ${{ steps.image.outputs.repo }}:${{ steps.publish_gate.outputs.tag }}
 
       - name: Push image to GHCR
+        if: steps.publish_gate.outputs.should_publish == 'true'
         run: |
-          docker push ${{ steps.image.outputs.repo }}:latest
-          docker push ${{ steps.image.outputs.repo }}:${{ steps.version.outputs.value }}
+          docker push ${{ steps.image.outputs.repo }}:${{ steps.publish_gate.outputs.tag }}
