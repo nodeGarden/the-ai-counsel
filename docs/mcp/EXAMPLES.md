@@ -405,6 +405,8 @@ Behind the scenes:
 }
 ```
 
+Custom personas are created from the **+ Add Advisor** card in Advisor Setup. They can also be created or deleted by REST clients with `POST /api/personas` and `DELETE /api/personas/{id}`; the `personas` MCP tool currently manages existing personas. When a custom persona is deleted, its ID and per-persona model assignment are removed from every saved advisor preset.
+
 ---
 
 ## Example 8: Configure advisors globally

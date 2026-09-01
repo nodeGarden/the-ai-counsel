@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Custom advisor personas can be created, edited, and deleted from Advisor Setup, with REST endpoints for integrations.
+
+### Fixed
+- Deleting a custom advisor now removes its persona ID and per-persona model assignment from all saved advisor presets.
+
 ## [0.11.4] - 2026-08-13
 
 ### Fixed

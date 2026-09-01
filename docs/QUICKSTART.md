@@ -101,7 +101,7 @@ Watch as:
 1. Click **+ New Advisors** in the sidebar
 2. Type a question or a decision to debate (e.g., "Should we rewrite our backend in Go?")
 3. Configure the debate options:
-   - Select 2 to 4 advisor personas (Skeptic, Strategist, Ethicist, etc.)
+   - Select 2 to 4 advisor personas (Skeptic, Strategist, Ethicist, etc.), or create your own with **+ Add Advisor**
    - Set the number of back-and-forth rounds (3 to 10)
    - Choose a default model or assign specific models to individual personas — models from all **enabled** providers appear here
    - *(Optional)* Save your lineup as a **preset** from Model Assignment (personas, models, rounds, web search — not the debate question)
@@ -133,7 +133,7 @@ Choose your deliberation type and depth:
 - **Use Groq** for ultra-fast council inference
 - **Use Ollama** for unlimited, free local queries (great for local Chairman synthesis using a model like `granite4:1b`)
 - **"I'm Feeling Lucky"** randomizes your council composition
-- **Customize Personas**: Go to **Settings** → **Advisors** to edit name, description, emoji, and prompt for any advisor persona
+- **Customize Personas**: Use **+ Add Advisor** to create a custom persona, or open any advisor card to edit its name, description, emoji, and prompt. Deleting a custom persona removes it from saved advisor presets automatically.
 - **Abort anytime** with the stop button in the sidebar
 
 ---

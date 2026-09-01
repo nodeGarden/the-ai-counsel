@@ -184,7 +184,7 @@ YOUR QUESTION (+ optional web search)
 | 🎤 **The Comedian** | Humorist Critic | Uses wit to expose absurdity and weak framing |
 | 📈 **The Economist** | Incentives Analyst | Analyzes incentives, scarcity, and unintended consequences |
 
-All personas are **fully customizable** — edit name, role, description, system prompt, and emoji. Changes persist across sessions with per-persona reset to defaults.
+All personas are **fully customizable** — edit name, role, description, system prompt, and emoji. Use **+ Add Advisor** in Advisor Setup to create additional custom personas. Changes persist across sessions; built-ins can be reset to defaults, while custom personas can be deleted. Deleting a custom persona also removes it from saved advisor presets.
 
 ---
 
@@ -239,8 +239,8 @@ Some provider/model combinations only accept their default temperature. The app 
 - **Multi-turn Conversations** — Follow-up questions carry full context automatically
 - **Docked Chat Composer** — The input stays below the scrollable conversation so responses remain readable while you type
 - **Text File Uploads** — Attach PDFs and text/code/config files in Council or Advisor mode; extracted text is sent as normalized prompt context across all providers while conversation history stores attachment metadata only
-- **Council Sizing** — Adjust council from 1 to 8 models; advisors from 2 to 4 personas (select from 12)
-- **Advisor Presets** — Save and load named advisor lineups (personas, model mode, optional rounds/web search) from Advisor Setup
+- **Council Sizing** — Adjust council from 1 to 8 models; advisors from 2 to 4 personas (select from 12 built-ins or custom personas)
+- **Advisor Presets** — Save and load named advisor lineups (built-in/custom personas, model mode, optional rounds/web search) from Advisor Setup
 - **Abort Anytime** — Cancel in-progress requests
 - **Conversation History** — All conversations saved locally with search; sidebar cards show stacked date/time, compact run summaries (rounds, critique mode, personas, search), and cumulative cost per thread
 - **Accessible Typography** — Settings → General offers Default (110%) and Large (150%) text sizes across the UI, including existing chats
@@ -340,7 +340,7 @@ Settings changes save automatically (~1 second after you stop editing). API keys
 
 **Provider toggles are global:** Settings → Council Config **provider toggles** control which sources appear in **all** model pickers — Council Setup and Advisor Setup alike. A provider must be both configured (API key) and enabled (toggle on) to show its models.
 
-**Advisor presets:** In Advisor Setup, save named lineups (personas, models, optional rounds/web search) from the Model Assignment section. Presets persist in `settings.json` as `advisor_presets` (max 20; one default).
+**Advisor presets:** In Advisor Setup, save named lineups (built-in/custom personas, models, optional rounds/web search) from the Model Assignment section. Presets persist in `settings.json` as `advisor_presets` (max 20; one default). Deleting a custom persona removes it from every saved preset so stale persona IDs cannot break a future debate.
 
 ### LLM API Keys
 
@@ -446,6 +446,7 @@ data/
 ├── settings.json              # Non-secret configuration (council, prompts, toggles)
 ├── credentials.json           # API keys & OAuth tokens (file storage mode; mode 0600)
 ├── persona_overrides.json     # Advisor persona customizations
+├── custom_personas.json       # User-created advisor personas
 └── conversations/             # Conversation history
     ├── {uuid}.json
     └── ...

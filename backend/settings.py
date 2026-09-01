@@ -456,3 +456,45 @@ def update_settings(**kwargs) -> Settings:
     updated = Settings(**updated_data)
     save_settings(updated)
     return updated
+
+
+def remove_persona_from_advisor_presets(persona_id: str) -> bool:
+    """Remove a deleted persona from saved presets and model assignments.
+
+    Presets are retained so users can repair a panel that no longer has two
+    advisors, but they must not keep references to a persona that no longer
+    exists.
+    """
+    persona_id = persona_id.strip()
+    if not persona_id:
+        return False
+
+    current = get_settings()
+    cleaned_presets = []
+    changed = False
+
+    for preset in current.advisor_presets:
+        persona_ids = [pid for pid in preset.persona_ids if pid != persona_id]
+        model_assignments = preset.model_assignments
+        if model_assignments is not None:
+            model_assignments = {
+                pid: model
+                for pid, model in model_assignments.items()
+                if pid != persona_id
+            }
+
+        if persona_ids != preset.persona_ids or model_assignments != preset.model_assignments:
+            changed = True
+
+        cleaned_presets.append(preset.model_copy(update={
+            "persona_ids": persona_ids,
+            "model_assignments": model_assignments,
+        }))
+
+    if not changed:
+        return False
+
+    update_settings(
+        advisor_presets=[preset.model_dump() for preset in cleaned_presets]
+    )
+    return True
