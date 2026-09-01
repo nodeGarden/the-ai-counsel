@@ -56,6 +56,35 @@ function snapshotsEqual(a, b) {
   return JSON.stringify(a) === JSON.stringify(b);
 }
 
+function removePersonaFromPreset(preset, personaId) {
+  const modelAssignments = preset.model_assignments == null
+    ? preset.model_assignments
+    : Object.fromEntries(
+        Object.entries(preset.model_assignments).filter(([id]) => id !== personaId)
+      );
+  return {
+    ...preset,
+    persona_ids: (preset.persona_ids || []).filter((id) => id !== personaId),
+    model_assignments: modelAssignments,
+  };
+}
+
+function removePersonaFromSnapshot(snapshot, personaId) {
+  if (!snapshot) return snapshot;
+  const modelAssignments = snapshot.model_assignments == null
+    ? null
+    : Object.fromEntries(
+        Object.entries(snapshot.model_assignments).filter(([id]) => id !== personaId)
+      );
+  return {
+    ...snapshot,
+    persona_ids: (snapshot.persona_ids || []).filter((id) => id !== personaId),
+    model_assignments: modelAssignments && Object.keys(modelAssignments).length > 0
+      ? modelAssignments
+      : null,
+  };
+}
+
 function newPresetId() {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
     return crypto.randomUUID();
@@ -606,15 +635,40 @@ export default function AdvisorSetup({
     'Failed to reset persona:'
   );
 
-  const handleEditDelete = () => runEditAction(
-    async () => {
-      await api.deletePersona(editingPersona.id);
-      setPersonas((prev) => prev.filter((p) => p.id !== editingPersona.id));
-      setSelectedPersonaIds((prev) => prev.filter((id) => id !== editingPersona.id));
-      return null;
-    },
-    'Failed to delete advisor:'
-  );
+  const handleEditDelete = () => {
+    if (!editingPersona || editSaving) return;
+    if (!window.confirm(`Delete ${editingPersona.name || 'this advisor'}? Saved presets will remove this advisor.`)) {
+      return;
+    }
+
+    return runEditAction(
+      async () => {
+        const deletedId = editingPersona.id;
+        const nextSelectedPersonaIds = selectedPersonaIds.filter((id) => id !== deletedId);
+        const nextModelAssignments = Object.fromEntries(
+          Object.entries(modelAssignments).filter(([id]) => id !== deletedId)
+        );
+        const nextPresets = presets.map((preset) => removePersonaFromPreset(preset, deletedId));
+
+        await api.deletePersona(deletedId);
+        setPersonas((prev) => prev.filter((p) => p.id !== deletedId));
+        setSelectedPersonaIds(nextSelectedPersonaIds);
+        setModelAssignments(nextModelAssignments);
+        setPresets(nextPresets);
+        if (activePresetId) {
+          const activePreset = presets.find((preset) => preset.id === activePresetId);
+          if (activePreset?.persona_ids?.includes(deletedId)) {
+            loadedSnapshotRef.current = removePersonaFromSnapshot(
+              loadedSnapshotRef.current,
+              deletedId
+            );
+          }
+        }
+        return null;
+      },
+      'Failed to delete advisor:'
+    );
+  };
 
   const canStart =
     selectedPersonaIds.length >= 2 &&

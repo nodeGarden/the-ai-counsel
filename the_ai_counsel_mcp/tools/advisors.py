@@ -9,7 +9,7 @@ from ..client import CouncilClient
 from .. import presets as preset_ops
 from ..stream_buffer import buffer_debate, wrap_with_progress
 
-VALID_PERSONA_IDS = (
+BUILTIN_PERSONA_IDS = (
     "skeptic, pragmatist, innovator, historian, ethicist, analyst, contrarian, "
     "strategist, humanist, risk-assessor, comedian, economist"
 )
@@ -20,7 +20,7 @@ def register(server: Any, base_url: str) -> None:
 
     @server.tool(description=(
         "Run a named-persona advisor debate for decisions, risks, strategy, or tradeoffs. "
-        "Requires question + 2-4 persona_ids. Optional: default_model, "
+        "Requires question + 2-4 persona_ids from the personas list, including custom personas. Optional: default_model, "
         "model_assignments, max_rounds (3-10), search_provider. Results include "
         "usage/cost details, word-limit warnings, and a cost_report."
     ))
@@ -159,8 +159,9 @@ def register(server: Any, base_url: str) -> None:
             return json.dumps({"status": "error", "message": str(exc)}, indent=2)
 
     @server.tool(description=(
-        "Manage advisor personas. action: 'list', 'get', 'update', 'reset'. "
-        f"Valid persona IDs: {VALID_PERSONA_IDS}."
+        "List, inspect, update, or reset advisor personas. action: 'list', 'get', 'update', 'reset'. "
+        "Custom persona creation and deletion are available in Advisor Setup or through the REST API. "
+        f"Built-in persona IDs: {BUILTIN_PERSONA_IDS}."
     ))
     async def personas(
         action: str,

@@ -16,7 +16,7 @@ The The AI Counsel MCP server exposes **10 action-based tools**. Each tool group
 | [`run_iterative_debate`](#run_iterative_debate) | _(none — direct params)_ | Multi-round council debate with critique modes |
 | [`council_settings`](#council_settings) | `get`, `update`, `list_presets`, `save_preset`, `delete_preset`, `set_default_preset` | Council config + presets |
 | [`advisor_settings`](#advisor_settings) | `get`, `update`, `list_presets`, `save_preset`, `delete_preset`, `set_default_preset` | Advisor defaults + presets |
-| [`personas`](#personas) | `list`, `get`, `update`, `reset` | Advisor persona CRUD |
+| [`personas`](#personas) | `list`, `get`, `update`, `reset` | List/edit/reset personas; create/delete custom personas via UI or REST |
 | [`conversations`](#conversations) | `list`, `get`, `progress` | Saved conversation history and active-run progress |
 | [`providers`](#providers) | `list_models`, `health`, `test`, `set_api_key`, `set_search` | Models, health, keys, search |
 | [`config_backup`](#config_backup) | `export`, `import`, `reset` | Full settings backup/restore |
@@ -153,7 +153,7 @@ Run a multi-round advisor debate with named personas.
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `question` | string | Yes | Debate topic |
-| `persona_ids` | string[] | Yes | 2–4 persona IDs |
+| `persona_ids` | string[] | Yes | 2–4 persona IDs returned by `personas` (built-in or custom) |
 | `default_model` | string | No | Default model for all personas |
 | `model_assignments` | object | No | Per-persona model overrides |
 | `max_rounds` | integer | No | 3–10 (default 3) |
@@ -287,7 +287,7 @@ Manage advisor defaults and presets.
 
 ## personas
 
-Manage advisor personas.
+Manage advisor personas. The MCP tool lists, inspects, updates, and resets personas. Create or delete custom personas in Advisor Setup or through the REST API; use the IDs returned by `list` when starting a debate.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
@@ -295,7 +295,7 @@ Manage advisor personas.
 | `persona_id` | string | For get/update/reset | e.g. `skeptic`, `pragmatist` |
 | `name`, `role`, `description`, `system_prompt`, `avatar_emoji` | string | For `update` | Fields to change (at least one required) |
 
-Valid IDs: `skeptic`, `pragmatist`, `innovator`, `historian`, `ethicist`, `analyst`, `contrarian`, `strategist`, `humanist`, `risk-assessor`, `comedian`, `economist`.
+Built-in IDs: `skeptic`, `pragmatist`, `innovator`, `historian`, `ethicist`, `analyst`, `contrarian`, `strategist`, `humanist`, `risk-assessor`, `comedian`, `economist`. Custom IDs are generated from their names and appear in the `list` response. Deleting a custom persona also removes it from saved advisor presets, including any per-persona model assignment.
 
 ---
 

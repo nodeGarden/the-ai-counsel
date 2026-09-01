@@ -49,6 +49,7 @@ Use MCP when your tool list includes any of these **10 tools** (server may appea
 | List / read conversations | `conversations` | `list`, `get` | ~~conversation GETs~~ |
 | Check active run progress | `conversations` | `progress` | ~~`GET /api/conversations/{id}/progress`~~ |
 | List / read / edit personas | `personas` | `list`, `get`, `update`, `reset` | ~~`/api/personas`~~ |
+| Create / delete custom personas | _(no MCP action)_ | _(Advisor Setup or REST)_ | ~~`POST /api/personas` / `DELETE /api/personas/{id}`~~ |
 | Read advisor defaults (+ presets) | `advisor_settings` | `get` | ~~`GET /api/settings`~~ (advisor fields) |
 | Update advisor defaults | `advisor_settings` | `update` | ~~`PUT /api/settings`~~ (advisor fields) |
 | Advisor preset CRUD | `advisor_settings` | `list_presets`, `save_preset`, `delete_preset`, `set_default_preset` | ~~`PUT /api/settings`~~ |
@@ -67,7 +68,7 @@ Use MCP when your tool list includes any of these **10 tools** (server may appea
 | `run_iterative_debate` | Direct params: `query`, optional `debate_rounds` (1–5), `critique_mode` (`freeform`/`paragraph`/`claim`), `auto_converge` (bool), `convergence_threshold` (1–3), `web_search`, `models` |
 | `council_settings` | `get`, `update` (members/chairman/temps/mode/prompts/provider toggles/**debate config**), `list_presets`, `save_preset`, `delete_preset`, `set_default_preset` |
 | `advisor_settings` | Same preset actions + `get`, `update` |
-| `personas` | `list`, `get`, `update`, `reset` |
+| `personas` | `list`, `get`, `update`, `reset` (custom create/delete via UI or REST) |
 | `conversations` | `list`, `get`, `progress` |
 | `providers` | `list_models`, `health`, `test`, `set_api_key`, `set_search` |
 | `config_backup` | `export`, `import`, `reset` |
@@ -135,8 +136,10 @@ Use this table **only when MCP tools are unavailable** or the operation has no M
 | **Run council debate (SSE stream)** | **POST** | **`/api/conversations/{id}/message/debate`** |
 | **Run advisor debate (SSE stream)** | **POST** | **`/api/conversations/{id}/debate/stream`** |
 | List all personas | GET | `/api/personas` |
+| Create a custom persona | POST | `/api/personas` |
 | Update a persona | PATCH | `/api/personas/{id}` |
 | Reset persona to defaults | DELETE | `/api/personas/{id}/override` |
+| Delete a custom persona | DELETE | `/api/personas/{id}` |
 | Test a provider | POST | `/api/settings/test-provider` |
 | Export settings (backup) | GET | `/api/settings/export` |
 | Import settings (restore) | POST | `/api/settings/import` |
@@ -791,10 +794,11 @@ async def poll_progress(conv_id: str, base_url="http://localhost:8001"):
 ### 14. List and Inspect Personas
 
 ```bash
-# List all 12 personas with current customizations
+# List the 12 built-in personas plus any custom personas
 curl http://localhost:8001/api/personas | python3 -m json.tool
 
-# Each persona has: id, name, role, description, system_prompt, avatar_emoji, color, is_customized
+# Each persona has: id, name, role, description, system_prompt, avatar_emoji,
+# color, is_customized, and is_custom (true for personas created by the user)
 ```
 
 ```python
@@ -806,13 +810,27 @@ async def get_persona(persona_id, base_url="http://localhost:8001"):
     return next((p for p in personas if p["id"] == persona_id), None)
 ```
 
-**Built-in persona IDs:** `skeptic`, `pragmatist`, `innovator`, `historian`, `ethicist`, `analyst`, `contrarian`, `strategist`, `humanist`, `risk-assessor`, `comedian`, `economist`
+**Built-in persona IDs:** `skeptic`, `pragmatist`, `innovator`, `historian`, `ethicist`, `analyst`, `contrarian`, `strategist`, `humanist`, `risk-assessor`, `comedian`, `economist`. Custom IDs are generated from the persona name and are returned by `GET /api/personas`.
+
+**To create a custom persona:**
+
+```bash
+curl -X POST http://localhost:8001/api/personas \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "The Futurist",
+    "role": "Trend Forecaster",
+    "description": "Projects long-term consequences.",
+    "system_prompt": "You are The Futurist. Identify emerging trends, plausible futures, and the assumptions that separate them."
+  }'
+# → Returns the new persona with is_custom: true
+```
 
 ---
 
 ### 15. Update a Persona
 
-Customize any persona's name, role, description, system prompt, or emoji. Changes persist to disk and mark `is_customized: true`.
+Customize any built-in persona's name, role, description, system prompt, or emoji. Custom personas can be edited through the same UI/API. Changes persist to disk and mark `is_customized: true`.
 
 ```bash
 curl -X PATCH http://localhost:8001/api/personas/skeptic \
@@ -833,6 +851,15 @@ Only provided fields are changed; others keep their current values.
 curl -X DELETE http://localhost:8001/api/personas/skeptic/override
 # → Returns the restored default persona with is_customized: false
 ```
+
+**To delete a custom persona:**
+
+```bash
+curl -X DELETE http://localhost:8001/api/personas/the-futurist
+# → Returns {"deleted": "the-futurist"}
+```
+
+Deleting a custom persona also removes its ID and any per-persona model assignment from saved `advisor_presets`. Presets are retained so they can be repaired if fewer than two advisors remain.
 
 ---
 

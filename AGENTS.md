@@ -83,6 +83,7 @@ This fixes binary incompatibilities (e.g., `@rollup/rollup-darwin-*` variants).
 | `costs.py` | Usage normalization, pricing lookup/cache, per-call cost attribution, and run-level cost reports |
 | `documents.py` | Document validation and text extraction for uploads (text-like files and PDFs; optional OCR fallback) |
 | `prompts.py` | Default system prompts for all stages (Stage 1/2/3, Title, Query) |
+| `personas.py` | Built-in advisor definitions, persisted overrides, and user-created custom personas |
 | `main.py` | FastAPI app with streaming SSE endpoints, live progress tracking (`_active_runs`), and MCP server mount |
 | `storage.py` | Conversation persistence in `data/conversations/{id}.json`; index entries include optional `run_summary`, `total_cost`, `cost_status`, `total_calls` via `derive_run_summary()` / `derive_conversation_cost()` |
 
@@ -93,6 +94,7 @@ This fixes binary incompatibilities (e.g., `@rollup/rollup-darwin-*` variants).
 | `App.jsx` | Main orchestration, SSE streaming, conversation state |
 | `ChatInterface.jsx` | User input, docked chat composer, web search toggle, execution mode |
 | `DocumentUpload.jsx` | File picker/extraction UI for Council and Advisor document context |
+| `AdvisorSetup.jsx` | Advisor selection, custom persona creation/editing/deletion, model assignments, and advisor presets |
 | `Stage1.jsx` | Tab view of individual model responses |
 | `Stage2.jsx` | Peer rankings with de-anonymization, aggregate scores |
 | `Stage3.jsx` | Chairman synthesis (final answer) |
@@ -342,7 +344,7 @@ curl https://your-endpoint.com/v1/models -H "Authorization: Bearer $API_KEY"
 
 **Council presets** (`council_presets` in `settings.json`): Saved from welcome-screen Council Setup — members + chairman only. Max 20; one default auto-loads. Main screen and Settings edit the same `council_models` / `chairman_model` fields. Lineup locked in a conversation after the first message.
 
-**Advisor presets** (`advisor_presets` in `settings.json`): Saved from Advisor Setup — personas, simple/advanced mode, model assignments, optional rounds/web search. Max 20; one default. See `skills/the-ai-counsel-api/SKILL.md`.
+**Advisor presets** (`advisor_presets` in `settings.json`): Saved from Advisor Setup — built-in or custom personas, simple/advanced mode, model assignments, optional rounds/web search. Max 20; one default. Deleting a custom persona removes its ID and model assignment from every saved preset while retaining the preset for repair. See `skills/the-ai-counsel-api/SKILL.md`.
 
 **Provider availability (important)**:
 - `enabled_providers` and `direct_provider_toggles` are **global** — they control which providers appear in all model pickers: Council Setup (welcome screen), Advisor Setup, and Settings temperature controls.
@@ -366,7 +368,7 @@ curl https://your-endpoint.com/v1/models -H "Authorization: Bearer $API_KEY"
 - OpenRouter free tier: 20 RPM, 50 requests/day
 - Groq: 30 RPM, 14,400 requests/day
 
-**Storage**: `data/settings.json` (non-secret config); secrets in `data/credentials.json` or OS keystore (Settings → LLM API Keys → Where secrets are stored). Subscription OAuth: `xai-oauth`, `openai-oauth`, `github-copilot`.
+**Storage**: `data/settings.json` (non-secret config, including advisor presets), `data/persona_overrides.json` (built-in persona edits), and `data/custom_personas.json` (user-created personas); secrets in `data/credentials.json` or OS keystore (Settings → LLM API Keys → Where secrets are stored). Subscription OAuth: `xai-oauth`, `openai-oauth`, `github-copilot`.
 
 ## Design Principles
 

@@ -27,6 +27,7 @@ from .settings import (
     get_settings,
     save_settings,
     update_settings,
+    remove_persona_from_advisor_presets,
     Settings,
     DEFAULT_COUNCIL_MODELS,
     DEFAULT_CHAIRMAN_MODEL,
@@ -1264,7 +1265,11 @@ async def remove_persona(persona_id: str):
         raise HTTPException(status_code=404, detail="Persona not found")
     if not persona.is_custom:
         raise HTTPException(status_code=400, detail="Built-in advisors cannot be deleted")
-    delete_persona(persona_id)
+    # Clean settings first so a failed persona-file write cannot leave a
+    # deleted persona referenced by a saved preset.
+    remove_persona_from_advisor_presets(persona_id)
+    if not delete_persona(persona_id):
+        raise HTTPException(status_code=404, detail="Persona not found")
     return {"deleted": persona_id}
 
 
