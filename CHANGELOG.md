@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-09-01
+
 ### Added
 - Custom advisor personas can be created, edited, and deleted from Advisor Setup, with REST endpoints for integrations.
 

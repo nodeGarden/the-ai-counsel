@@ -17,7 +17,7 @@ docker run -d --restart unless-stopped --name the-ai-counsel \
 
 Then open **http://localhost:8001** and configure your API keys in Settings.
 
-Every push to `main` that passes the test suite publishes a fresh `:latest` image. When a matching release tag such as `v0.11.4` is pushed, the workflow also publishes `ghcr.io/jacob-bd/the-ai-counsel:0.11.4`, so you can pin to, or roll back to, a specific release instead of always tracking `latest`. Manually starting the workflow runs the tests for the selected ref but does not publish an image.
+Every push to `main` that passes the test suite publishes a fresh `:latest` image. When a matching release tag such as `v0.12.0` is pushed, the workflow also publishes `ghcr.io/jacob-bd/the-ai-counsel:0.12.0`, so you can pin to, or roll back to, a specific release instead of always tracking `latest`. Manually starting the workflow runs the tests for the selected ref but does not publish an image.
 
 > **One-time setup for maintainers:** GHCR creates a package as **private** the first time a workflow pushes to it. Until someone makes it public, the `docker pull`/`docker run` command above fails for anyone else with `denied: requested access to the resource is denied`. After the `docker-publish.yml` workflow's first successful run, go to the package on GitHub (your profile or org → **Packages** → `the-ai-counsel`) → **Package settings** → and either set visibility to **Public**, or link the package to this repository so its collaborators inherit access. This is a one-time step; it does not need to be repeated on later pushes.
 
@@ -181,7 +181,7 @@ docker run -d --restart unless-stopped --name the-ai-counsel \
   ghcr.io/jacob-bd/the-ai-counsel:latest
 ```
 
-To pin to a known-good release instead of always tracking `latest`, use a version tag (e.g. `ghcr.io/jacob-bd/the-ai-counsel:0.11.4`) in place of `:latest` above.
+To pin to a known-good release instead of always tracking `latest`, use a version tag (e.g. `ghcr.io/jacob-bd/the-ai-counsel:0.12.0`) in place of `:latest` above.
 
 **Built from source:** pull the latest code and rebuild.
 
