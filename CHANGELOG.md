@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.1] - 2026-09-04
+
+### Fixed
+- OpenCode Go requests now reuse each Counsel conversation's session ID across all inference stages and retries, send the identifying Counsel user agent, and propagate that identity through council, debate, advisor, preflight, title, and search-query calls.
+
+### Deployment
+- Restart the backend when upgrading so OpenCode Go requests begin sending the automatic session identification and Counsel user agent.
+
 ## [0.12.0] - 2026-09-01
 
 ### Added

@@ -67,6 +67,21 @@ async def test_preflight_semaphore_does_not_change_behavior():
     assert mock_query.call_count == 10
 
 
+@pytest.mark.asyncio
+async def test_preflight_forwards_conversation_id_to_every_attempt():
+    with patch("backend.model_preflight.query_model", new_callable=AsyncMock) as mock_query:
+        mock_query.return_value = {"error": False, "content": "OK"}
+
+        result = await preflight_models(
+            ["opencode-go:glm-5.1"],
+            timeout=5.0,
+            conversation_id="conversation-preflight",
+        )
+
+    assert result.ok is True
+    assert mock_query.await_args.kwargs["conversation_id"] == "conversation-preflight"
+
+
 def test_is_transient_rate_limit_classification():
     from backend.model_preflight import _is_transient_rate_limit
 
@@ -140,4 +155,3 @@ async def test_preflight_hard_fails_on_plain_503():
     assert result.failures == [{"model": "custom:unstable-model", "error": "Service Unavailable"}]
     assert result.rate_limited == []
     assert mock_query.call_count == 1
-

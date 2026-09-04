@@ -492,13 +492,19 @@ def _apply_search_env(settings: Settings, provider_override: Optional[str] = Non
     return provider
 
 
-async def _fetch_search_context(content: str, settings: Settings, provider_override: Optional[str] = None) -> tuple:
+async def _fetch_search_context(
+    content: str,
+    settings: Settings,
+    provider_override: Optional[str] = None,
+    *,
+    conversation_id: Optional[str] = None,
+) -> tuple:
     """Run web search and return (search_context, search_query)."""
     provider = _apply_search_env(settings, provider_override)
     # Use LLM query generation only when explicitly selected and not using DuckDuckGo
     # (DDG has built-in query optimization; no need to pre-process)
     if settings.search_keyword_extraction == "llm" and provider != SearchProvider.DUCKDUCKGO:
-        search_query = await generate_search_query(content)
+        search_query = await generate_search_query(content, conversation_id=conversation_id)
     else:
         search_query = content
     search_result = await perform_web_search(
@@ -542,9 +548,13 @@ def _build_council_preflight_models(body: SendMessageRequest) -> List[str]:
     return models
 
 
-async def _run_model_preflight(models: List[str]) -> str:
+async def _run_model_preflight(
+    models: List[str],
+    *,
+    conversation_id: Optional[str] = None,
+) -> str:
     """Return a user-facing error message if model preflight fails."""
-    result = await preflight_models(models)
+    result = await preflight_models(models, conversation_id=conversation_id)
     if result.ok:
         return ""
     return build_preflight_error_message(result)
@@ -570,6 +580,7 @@ async def _run_council_pipeline(
     request: Optional[Request] = None,
     history: Optional[List[Dict[str, str]]] = None,
     preflight: bool = True,
+    conversation_id: Optional[str] = None,
 ) -> PipelineResult:
     """Shared orchestration for stage1 → stage2 → stage3 (non-streaming)."""
     result = PipelineResult()
@@ -581,11 +592,21 @@ async def _run_council_pipeline(
             council_models=models_override,
             chairman_model=chairman_override,
         )
-        preflight_error = await _run_model_preflight(_build_council_preflight_models(body))
+        preflight_error = await _run_model_preflight(
+            _build_council_preflight_models(body),
+            conversation_id=conversation_id,
+        )
         if preflight_error:
             raise HTTPException(status_code=400, detail=preflight_error)
 
-    async for item in stage1_collect_responses(content, search_context, request=request, models_override=models_override, history=history):
+    async for item in stage1_collect_responses(
+        content,
+        search_context,
+        request=request,
+        models_override=models_override,
+        history=history,
+        conversation_id=conversation_id,
+    ):
         if isinstance(item, int):
             continue
         result.stage1.append(item)
@@ -595,7 +616,13 @@ async def _run_council_pipeline(
         raise HTTPException(status_code=502, detail=f"All models failed: {'; '.join(errors)}")
 
     if execution_mode in ("chat_ranking", "full"):
-        async for item in stage2_collect_rankings(content, result.stage1, search_context, request=request):
+        async for item in stage2_collect_rankings(
+            content,
+            result.stage1,
+            search_context,
+            request=request,
+            conversation_id=conversation_id,
+        ):
             if isinstance(item, dict) and not item.get('model'):
                 result.label_to_model = item
                 continue
@@ -605,7 +632,8 @@ async def _run_council_pipeline(
     if execution_mode == "full":
         result.stage3 = await stage3_synthesize_final(
             content, result.stage1, result.stage2, search_context,
-            chairman_override=chairman_override
+            chairman_override=chairman_override,
+            conversation_id=conversation_id,
         )
 
     result.cost_report = build_council_cost_report(result.stage1, result.stage2, result.stage3)
@@ -760,7 +788,10 @@ async def send_message_stream(conversation_id: str, body: SendMessageRequest, re
             effective_content, attachments = _prepare_document_context(body.content, body.documents)
             storage.add_user_message(conversation_id, body.content, conversation=conversation, attachments=attachments)
 
-            preflight_error = await _run_model_preflight(_build_council_preflight_models(body))
+            preflight_error = await _run_model_preflight(
+                _build_council_preflight_models(body),
+                conversation_id=conversation_id,
+            )
             if preflight_error:
                 storage.add_error_message(conversation_id, preflight_error)
                 yield f"data: {json.dumps({'type': 'error', 'message': preflight_error})}\n\n"
@@ -768,7 +799,9 @@ async def send_message_stream(conversation_id: str, body: SendMessageRequest, re
 
             # Start title generation in parallel (don't await yet)
             if is_first_message:
-                title_task = asyncio.create_task(generate_conversation_title(body.content))
+                title_task = asyncio.create_task(
+                    generate_conversation_title(body.content, conversation_id=conversation_id)
+                )
 
             search_context = ""
             search_query = ""
@@ -788,7 +821,10 @@ async def send_message_stream(conversation_id: str, body: SendMessageRequest, re
                 # Use LLM query generation only when explicitly selected and not using DuckDuckGo
                 # (DDG has built-in query optimization; no need to pre-process)
                 if settings.search_keyword_extraction == "llm" and provider != SearchProvider.DUCKDUCKGO:
-                    search_query = await generate_search_query(body.content)
+                    search_query = await generate_search_query(
+                        body.content,
+                        conversation_id=conversation_id,
+                    )
                 else:
                     search_query = body.content
 
@@ -816,7 +852,14 @@ async def send_message_stream(conversation_id: str, body: SendMessageRequest, re
 
             total_models = 0
 
-            async for item in stage1_collect_responses(effective_content, search_context, request, models_override=body.council_models, history=history):
+            async for item in stage1_collect_responses(
+                effective_content,
+                search_context,
+                request,
+                models_override=body.council_models,
+                history=history,
+                conversation_id=conversation_id,
+            ):
                 if isinstance(item, int):
                     total_models = item
                     _active_runs[conversation_id]["progress"]["stage1"]["total"] = total_models
@@ -845,7 +888,13 @@ async def send_message_stream(conversation_id: str, body: SendMessageRequest, re
                 await asyncio.sleep(0.05)
 
                 # Iterate over the async generator
-                async for item in stage2_collect_rankings(effective_content, stage1_results, search_context, request):
+                async for item in stage2_collect_rankings(
+                    effective_content,
+                    stage1_results,
+                    search_context,
+                    request,
+                    conversation_id=conversation_id,
+                ):
                     # First item is the label mapping
                     if isinstance(item, dict) and not item.get('model'):
                         label_to_model = item
@@ -876,7 +925,14 @@ async def send_message_stream(conversation_id: str, body: SendMessageRequest, re
                     print("Client disconnected before Stage 3")
                     raise asyncio.CancelledError("Client disconnected")
 
-                stage3_result = await stage3_synthesize_final(effective_content, stage1_results, stage2_results, search_context, chairman_override=body.chairman_model)
+                stage3_result = await stage3_synthesize_final(
+                    effective_content,
+                    stage1_results,
+                    stage2_results,
+                    search_context,
+                    chairman_override=body.chairman_model,
+                    conversation_id=conversation_id,
+                )
                 _active_runs[conversation_id]["stage3_response"] = stage3_result
                 yield f"data: {json.dumps({'type': 'stage3_complete', 'data': stage3_result})}\n\n"
 
@@ -992,7 +1048,10 @@ async def send_debate_message_stream(conversation_id: str, body: SendMessageRequ
             effective_content, attachments = _prepare_document_context(body.content, body.documents)
             storage.add_user_message(conversation_id, body.content, conversation=conversation, attachments=attachments)
 
-            preflight_error = await _run_model_preflight(_build_council_preflight_models(body))
+            preflight_error = await _run_model_preflight(
+                _build_council_preflight_models(body),
+                conversation_id=conversation_id,
+            )
             if preflight_error:
                 storage.add_error_message(conversation_id, preflight_error)
                 yield f"data: {json.dumps({'type': 'error', 'message': preflight_error})}\n\n"
@@ -1000,7 +1059,9 @@ async def send_debate_message_stream(conversation_id: str, body: SendMessageRequ
 
             # Start title generation in parallel
             if is_first_message:
-                title_task = asyncio.create_task(generate_conversation_title(body.content))
+                title_task = asyncio.create_task(
+                    generate_conversation_title(body.content, conversation_id=conversation_id)
+                )
 
             search_context = ""
             search_query = ""
@@ -1017,7 +1078,10 @@ async def send_debate_message_stream(conversation_id: str, body: SendMessageRequ
                     raise asyncio.CancelledError("Client disconnected")
 
                 if settings.search_keyword_extraction == "llm" and provider != SearchProvider.DUCKDUCKGO:
-                    search_query = await generate_search_query(body.content)
+                    search_query = await generate_search_query(
+                        body.content,
+                        conversation_id=conversation_id,
+                    )
                 else:
                     search_query = body.content
 
@@ -1048,6 +1112,7 @@ async def send_debate_message_stream(conversation_id: str, body: SendMessageRequ
                 chairman_override=body.chairman_model,
                 history=history,
                 debate_rounds=effective_rounds,
+                conversation_id=conversation_id,
             ):
                 event_type = event.get("type")
                 yield f"data: {json.dumps(event)}\n\n"
@@ -1302,7 +1367,12 @@ async def start_debate_stream(conversation_id: str, body: StartDebateRequest, re
                 event = {"type": "advisor_search_start"}
                 _update_advisor_run(conversation_id, event)
                 yield f"data: {json.dumps(event)}\n\n"
-                search_context, search_query, _ = await _fetch_search_context(body.question, settings, body.search_provider)
+                search_context, search_query, _ = await _fetch_search_context(
+                    body.question,
+                    settings,
+                    body.search_provider,
+                    conversation_id=conversation_id,
+                )
                 event = {"type": "advisor_search_complete", "data": {"search_query": search_query}}
                 _update_advisor_run(conversation_id, event)
                 yield f"data: {json.dumps(event)}\n\n"
@@ -1327,6 +1397,7 @@ async def start_debate_stream(conversation_id: str, body: StartDebateRequest, re
                 search_context=search_context,
                 request=request,
                 preflight=True,
+                conversation_id=conversation_id,
             ):
                 event_type = event.get("type", "")
                 if event_type == "advisor_debate_start" and "data" in event:
@@ -1376,14 +1447,20 @@ async def start_debate_stream(conversation_id: str, body: StartDebateRequest, re
             )
 
             if is_first_message:
-                title = await generate_conversation_title(body.question)
+                title = await generate_conversation_title(
+                    body.question,
+                    conversation_id=conversation_id,
+                )
                 storage.update_conversation_title(conversation_id, title)
                 yield f"data: {json.dumps({'type': 'title_complete', 'data': {'title': title}})}\n\n"
 
         except asyncio.CancelledError:
             if is_first_message:
                 try:
-                    title = await generate_conversation_title(body.question)
+                    title = await generate_conversation_title(
+                        body.question,
+                        conversation_id=conversation_id,
+                    )
                     storage.update_conversation_title(conversation_id, title)
                 except Exception:
                     pass
@@ -1416,7 +1493,10 @@ async def send_message_sync(conversation_id: str, body: SendMessageRequest):
 
     history = _build_chat_history(conversation)
 
-    preflight_error = await _run_model_preflight(_build_council_preflight_models(body))
+    preflight_error = await _run_model_preflight(
+        _build_council_preflight_models(body),
+        conversation_id=conversation_id,
+    )
     if preflight_error:
         raise HTTPException(status_code=400, detail=preflight_error)
 
@@ -1431,13 +1511,18 @@ async def send_message_sync(conversation_id: str, body: SendMessageRequest):
     search_query = ""
     if body.web_search:
         settings = get_settings()
-        search_context, search_query, _ = await _fetch_search_context(body.content, settings)
+        search_context, search_query, _ = await _fetch_search_context(
+            body.content,
+            settings,
+            conversation_id=conversation_id,
+        )
 
     result = await _run_council_pipeline(
         effective_content, body.execution_mode, search_context,
         models_override=body.council_models, chairman_override=body.chairman_model,
         history=history,
         preflight=False,
+        conversation_id=conversation_id,
     )
 
     metadata = {"execution_mode": body.execution_mode, "cost_report": result.cost_report}
@@ -1474,6 +1559,7 @@ async def ask_oneshot(body: AskRequest):
     """Run a one-shot query, persist it as a conversation, and return JSON."""
     settings = get_settings()
     models = body.models if body.models else settings.council_models
+    conversation_id = str(uuid.uuid4())
 
     if not models:
         raise HTTPException(status_code=400, detail="At least one model is required")
@@ -1484,14 +1570,21 @@ async def ask_oneshot(body: AskRequest):
         council_models=models,
         chairman_model=body.chairman_model,
     )
-    preflight_error = await _run_model_preflight(_build_council_preflight_models(preflight_body))
+    preflight_error = await _run_model_preflight(
+        _build_council_preflight_models(preflight_body),
+        conversation_id=conversation_id,
+    )
     if preflight_error:
         raise HTTPException(status_code=400, detail=preflight_error)
 
     search_context = ""
     search_query = ""
     if body.web_search:
-        search_context, search_query, _ = await _fetch_search_context(body.content, settings)
+        search_context, search_query, _ = await _fetch_search_context(
+            body.content,
+            settings,
+            conversation_id=conversation_id,
+        )
 
     try:
         effective_content, attachments = _prepare_document_context(body.content, body.documents)
@@ -1502,9 +1595,9 @@ async def ask_oneshot(body: AskRequest):
         effective_content, body.execution_mode, search_context,
         models_override=models, chairman_override=body.chairman_model,
         preflight=False,
+        conversation_id=conversation_id,
     )
 
-    conversation_id = str(uuid.uuid4())
     conversation = storage.create_conversation(conversation_id)
     conversation["title"] = storage.derive_conversation_title(body.content)
     storage.add_user_message(

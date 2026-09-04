@@ -179,6 +179,40 @@ def test_ask_oneshot_persists_visible_conversation_and_returns_id(tmp_path, monk
     assert payload["conversation_id"] in visible_ids
 
 
+def test_ask_oneshot_passes_conversation_id_before_model_calls(tmp_path, monkeypatch):
+    monkeypatch.setattr(storage, "DATA_DIR", str(tmp_path))
+    captured = {}
+    result = PipelineResult(
+        stage1=[{"model": "opencode-go:glm-5.1", "response": "ok", "error": None}],
+        cost_report={"total_cost": 0, "total_calls": 1},
+    )
+
+    async def fake_preflight(_models, **kwargs):
+        captured["preflight_conversation_id"] = kwargs["conversation_id"]
+        return ""
+
+    async def fake_pipeline(_content, *args, **kwargs):
+        captured["pipeline_conversation_id"] = kwargs["conversation_id"]
+        return result
+
+    with patch("backend.main._run_model_preflight", side_effect=fake_preflight):
+        with patch("backend.main._run_council_pipeline", side_effect=fake_pipeline):
+            with TestClient(app) as client:
+                response = client.post(
+                    "/api/ask",
+                    json={
+                        "content": "Use one stable session.",
+                        "models": ["opencode-go:glm-5.1"],
+                        "execution_mode": "chat_only",
+                    },
+                )
+
+    assert response.status_code == 200
+    conversation_id = response.json()["conversation_id"]
+    assert captured["preflight_conversation_id"] == conversation_id
+    assert captured["pipeline_conversation_id"] == conversation_id
+
+
 def test_iterative_debate_passes_effective_content(tmp_path, monkeypatch):
     monkeypatch.setattr(storage, "DATA_DIR", str(tmp_path))
     storage.create_conversation("conv-doc-debate")

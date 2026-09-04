@@ -97,7 +97,11 @@ def _is_timeout_error(message: str) -> bool:
     return any(marker in text for marker in ("timeout", "timed out", "readtimeout", "connecttimeout"))
 
 
-async def _preflight_one(model: str, timeout: float) -> tuple[str, str | None, bool, bool, int]:
+async def _preflight_one(
+    model: str,
+    timeout: float,
+    conversation_id: str | None = None,
+) -> tuple[str, str | None, bool, bool, int]:
     """Ping a single model once.
 
     Returns (model, error_message, timed_out, rate_limited, http_status_code).
@@ -105,7 +109,13 @@ async def _preflight_one(model: str, timeout: float) -> tuple[str, str | None, b
     """
     messages = [{"role": "user", "content": PREFLIGHT_PROMPT}]
     try:
-        result = await query_model(model, messages, timeout=timeout, temperature=0.0)
+        result = await query_model(
+            model,
+            messages,
+            timeout=timeout,
+            temperature=0.0,
+            conversation_id=conversation_id,
+        )
     except asyncio.TimeoutError:
         return model, None, True, False, 0
     except Exception as exc:
@@ -132,6 +142,7 @@ async def _preflight_one(model: str, timeout: float) -> tuple[str, str | None, b
 async def _preflight_one_with_retry(
     model: str,
     timeout: float,
+    conversation_id: str | None = None,
 ) -> tuple[str, str | None, bool, bool]:
     """Ping a single model, retrying transient rate-limit errors with backoff.
 
@@ -154,7 +165,11 @@ async def _preflight_one_with_retry(
             )
             return model, last_error, False, True
 
-        model_out, error, timed_out, rate_limited, status_code = await _preflight_one(model, timeout)
+        model_out, error, timed_out, rate_limited, status_code = await _preflight_one(
+            model,
+            timeout,
+            conversation_id,
+        )
         last_error = error
         last_status = status_code
 
@@ -193,6 +208,8 @@ async def _preflight_one_with_retry(
 async def preflight_models(
     models: Iterable[str],
     timeout: float = DEFAULT_PREFLIGHT_TIMEOUT,
+    *,
+    conversation_id: str | None = None,
 ) -> ModelPreflightResult:
     """Ping selected models and report immediate non-timeout failures.
 
@@ -211,7 +228,7 @@ async def preflight_models(
 
     async def _preflight_with_sem(m: str):
         async with sem:
-            return await _preflight_one_with_retry(m, timeout)
+            return await _preflight_one_with_retry(m, timeout, conversation_id)
 
     checks = [_preflight_with_sem(model) for model in unique_models]
     for model, error, timed_out, still_rate_limited in await asyncio.gather(*checks):
