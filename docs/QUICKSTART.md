@@ -37,7 +37,7 @@ npm install --prefix frontend
 ./start.sh
 ```
 
-Open **http://localhost:5173** in your browser.
+Open **http://localhost:7002** in your browser.
 
 ---
 
@@ -144,7 +144,7 @@ Choose your deliberation type and depth:
 |---------|----------|
 | Models not appearing | Enable the provider in **Settings → Council Config** toggles; verify API key / Ollama connection. Toggles are global — they apply to both Council and Advisor pickers |
 | Rate limit errors | Use Groq (14k/day) or Ollama (unlimited) |
-| Port conflict | Backend uses 8001, frontend uses 5173 |
+| Port conflict | Backend uses 7001, frontend uses 7002 |
 | node_modules errors | `rm -rf frontend/node_modules && npm install --prefix frontend` |
 
 ---

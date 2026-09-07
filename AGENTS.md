@@ -29,9 +29,9 @@ npm run dev
 ```
 
 **Ports:**
-- Backend: `http://localhost:8001` (NOT 8000 - avoid conflicts)
-- Frontend: `http://localhost:5173`
-- MCP Server (SSE): Built-in at `/mcp` on the backend (`http://localhost:8001/mcp/sse`) — **10 action-based tools** (`council_deliberate`, `model_chat`, `advisor_debate`, `run_iterative_debate`, `council_settings`, `advisor_settings`, `personas`, `conversations`, `providers`, `config_backup`). See [`docs/mcp/TOOLS.md`](docs/mcp/TOOLS.md). `GET /api/health` reports `"mcp": {"tools": 10}`.
+- Backend: `http://localhost:7001` (NOT 8000 - avoid conflicts)
+- Frontend: `http://localhost:7002`
+- MCP Server (SSE): Built-in at `/mcp` on the backend (`http://localhost:7001/mcp/sse`) — **10 action-based tools** (`council_deliberate`, `model_chat`, `advisor_debate`, `run_iterative_debate`, `council_settings`, `advisor_settings`, `personas`, `conversations`, `providers`, `config_backup`). See [`docs/mcp/TOOLS.md`](docs/mcp/TOOLS.md). `GET /api/health` reports `"mcp": {"tools": 10}`.
 
 **Network Access:**
 ```bash
@@ -42,9 +42,13 @@ LLM_COUNCIL_BIND_HOST=0.0.0.0 uv run python -m backend.main
 cd frontend && npm run dev -- --host
 ```
 
+**Port variables** (set in the root `.env`, see `.env.example`):
+- `PORT_BACKEND`: backend port, default `7001`. Read by the backend, the Vite config (injected into the frontend's API base URL), `start.sh`, and Docker.
+- `PORT_FRONTEND`: Vite dev/preview server port, default `7002`.
+
 **Backend bind variables:**
 - `LLM_COUNCIL_BIND_HOST`: dev launcher bind host, default `127.0.0.1`. Use `0.0.0.0` only when you intentionally want LAN access.
-- `LLM_COUNCIL_BIND_PORT`: dev launcher bind port, default `8001`.
+- `LLM_COUNCIL_BIND_PORT`: legacy override for `PORT_BACKEND`; takes precedence when set.
 - `LLM_COUNCIL_ADMIN_TOKEN`: required for remote access to `/api/settings/export`, `/api/settings/import`, and `/api/settings/reset`. Without it, those admin endpoints only accept direct loopback clients and reject proxied external clients.
 
 **Installing Dependencies:**
@@ -188,9 +192,9 @@ useEffect(() => {
 
 ## Common Gotchas
 
-1. **Port Conflicts**: Backend uses 8001 (not 8000). Update `backend/main.py` and `frontend/src/api.js` together.
+1. **Port Conflicts**: Backend uses 7001, frontend 7002. Both come from `PORT_BACKEND` / `PORT_FRONTEND` in the root `.env` — change them there, not in source.
 
-2. **CORS Errors**: Frontend origins must match `main.py` CORS middleware (localhost:5173 and :3000).
+2. **CORS Errors**: Frontend origins must match `main.py` CORS middleware (localhost:7002 and :3000).
 
 3. **Missing Metadata**: `label_to_model` and `aggregate_rankings` are ephemeral - only in API responses, not stored.
 

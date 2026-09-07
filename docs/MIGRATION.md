@@ -22,7 +22,7 @@ The AI Counsel is a rebrand and continuation of LLM Council Plus. All features, 
 
 - **Data format** — `data/settings.json` and `data/conversations/*.json` are identical in schema. No migration script needed.
 - **Environment variables** — `LLM_COUNCIL_BIND_HOST`, `LLM_COUNCIL_BIND_PORT`, `LLM_COUNCIL_ADMIN_TOKEN` all work as before.
-- **Port** — Backend still runs on `8001`.
+- **Port** — Backend still runs on `7001`.
 - **API surface** — All `/api/*` endpoints are unchanged. New endpoints were added (see CHANGELOG).
 
 ---
@@ -50,7 +50,7 @@ cp ~/llm-council-plus/.env ~/the-ai-counsel/.env 2>/dev/null || true
 docker compose up -d --build
 ```
 
-Open **http://localhost:8001** (or your server IP). All your conversations, API keys, council presets, advisor presets, and system prompts will be there.
+Open **http://localhost:7001** (or your server IP). All your conversations, API keys, council presets, advisor presets, and system prompts will be there.
 
 ### Cleanup (optional)
 
@@ -115,7 +115,7 @@ After re-registering, verify with a health check:
 
 ```bash
 # MCP tool prefix changes from mcp__llm-council-plus__ to mcp__the-ai-counsel__
-curl http://localhost:8001/api/health
+curl http://localhost:7001/api/health
 # → {"status":"ok","mcp":{"tools":10}}
 ```
 
@@ -147,7 +147,7 @@ No. Copy the whole `data/` directory. Non-secret settings stay in `settings.json
 No. The settings schema is unchanged. The only thing that changes is the product name in the UI.
 
 **Q: Can I run both side by side?**
-Yes, as long as they use different ports. The new repo defaults to 8001 — if the old one is still running on 8001, either stop it first or change the port via `LLM_COUNCIL_BIND_PORT` or Docker port mapping.
+Yes, as long as they use different ports. The new repo defaults to 7001 — if the old one is still running on 7001, either stop it first or change the port via `LLM_COUNCIL_BIND_PORT` or Docker port mapping.
 
 **Q: What about the old repo?**
 The `jacob-bd/llm-council-plus` repo will remain available with a notice pointing to the new repo. It will not receive further updates.

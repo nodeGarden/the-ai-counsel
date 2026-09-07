@@ -2,14 +2,14 @@
 
 This guide covers installing the MCP server as a local process (stdio transport). It works whether your Council backend is on your laptop or on a remote server.
 
-If you want zero local installation, you can connect directly to the remote server's built-in SSE endpoint on port 8001 at `/mcp/sse` (see [SETUP-REMOTE.md](SETUP-REMOTE.md) instead). If you are unsure which to choose, see [CHOOSING-TRANSPORT.md](CHOOSING-TRANSPORT.md).
+If you want zero local installation, you can connect directly to the remote server's built-in SSE endpoint on port 7001 at `/mcp/sse` (see [SETUP-REMOTE.md](SETUP-REMOTE.md) instead). If you are unsure which to choose, see [CHOOSING-TRANSPORT.md](CHOOSING-TRANSPORT.md).
 
 ---
 
 ## Prerequisites
 
 - **Python 3.10+** — check with `python --version` or `python3 --version`
-- **The AI Counsel backend running** — local at `http://localhost:8001`, or accessible at a remote URL
+- **The AI Counsel backend running** — local at `http://localhost:7001`, or accessible at a remote URL
 
 ---
 
@@ -44,7 +44,7 @@ claude mcp add the-ai-counsel python -m the_ai_counsel_mcp
 
 **Remote backend:**
 ```bash
-claude mcp add the-ai-counsel python -m the_ai_counsel_mcp --base-url https://yourserver.com:8001
+claude mcp add the-ai-counsel python -m the_ai_counsel_mcp --base-url https://yourserver.com:7001
 ```
 
 Verify it was registered:
@@ -65,7 +65,7 @@ gemini mcp add the-ai-counsel --command "python -m the_ai_counsel_mcp"
 
 **Remote backend:**
 ```bash
-gemini mcp add the-ai-counsel --command "python -m the_ai_counsel_mcp --base-url https://yourserver.com:8001"
+gemini mcp add the-ai-counsel --command "python -m the_ai_counsel_mcp --base-url https://yourserver.com:7001"
 ```
 
 ---
@@ -81,7 +81,7 @@ The AI will call `providers` with action `health`. A successful response looks l
 ```json
 {
   "backend": "reachable",
-  "base_url": "http://localhost:8001",
+  "base_url": "http://localhost:7001",
   "council_models": ["openai:gpt-4.1", "..."],
   "configured_providers": ["openai", "anthropic"]
 }
@@ -101,10 +101,10 @@ pip install -e .
 
 # Register with remote URL
 claude mcp add the-ai-counsel python -m the_ai_counsel_mcp \
-  --base-url https://yourserver.com:8001
+  --base-url https://yourserver.com:7001
 ```
 
-The `--base-url` flag tells the MCP server where to find the Council API. It replaces `http://localhost:8001` in all outbound requests.
+The `--base-url` flag tells the MCP server where to find the Council API. It replaces `http://localhost:7001` in all outbound requests.
 
 ---
 
@@ -112,7 +112,7 @@ The `--base-url` flag tells the MCP server where to find the Council API. It rep
 
 **"Backend not running" or "Connection refused"**
 - Make sure the backend is started: `uv run python -m backend.main` (local) or verify the remote URL is accessible
-- Confirm port 8001 is open: `curl http://localhost:8001/api/health` (local) or `curl https://yourserver.com:8001/api/health` (remote)
+- Confirm port 7001 is open: `curl http://localhost:7001/api/health` (local) or `curl https://yourserver.com:7001/api/health` (remote)
 
 **"python: command not found" or "module not found"**
 - Use `python3` instead of `python` if your system requires it
@@ -125,5 +125,5 @@ The `--base-url` flag tells the MCP server where to find the Council API. It rep
 - Restart Claude Code after registration changes
 
 **"Connection refused" for remote backend**
-- Confirm the backend URL is correct and port 8001 is open in the server's firewall
-- Test from your machine: `curl https://yourserver.com:8001/api/health`
+- Confirm the backend URL is correct and port 7001 is open in the server's firewall
+- Test from your machine: `curl https://yourserver.com:7001/api/health`

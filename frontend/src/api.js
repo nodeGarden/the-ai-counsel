@@ -4,6 +4,10 @@
 
 // Dynamically determine API base URL based on current hostname
 // This allows the app to work on both localhost and network IPs
+// Backend port is injected at build time from PORT_BACKEND in the root .env
+// (see vite.config.js); the fallback keeps this working outside a Vite build.
+const BACKEND_PORT = typeof __BACKEND_PORT__ !== 'undefined' ? __BACKEND_PORT__ : '7001';
+
 const getApiBase = () => {
   if (window.__AI_COUNSEL_CONFIG__?.apiUrl) {
     return window.__AI_COUNSEL_CONFIG__.apiUrl;
@@ -12,7 +16,7 @@ const getApiBase = () => {
     return import.meta.env.VITE_API_URL;
   }
   const hostname = window.location.hostname;
-  return `http://${hostname}:8001`;
+  return `http://${hostname}:${BACKEND_PORT}`;
 };
 
 const API_BASE = getApiBase();
