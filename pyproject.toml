@@ -31,3 +31,6 @@ dev = [
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+markers = [
+    "real_settings_file: test intentionally writes the real data/settings.json (opts out of the conftest guard)",
+]
