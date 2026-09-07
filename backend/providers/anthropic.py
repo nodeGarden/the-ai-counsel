@@ -1,6 +1,8 @@
 """Anthropic provider implementation."""
 
 import httpx
+
+from .errors import describe_exception
 from typing import List, Dict, Any
 from .base import LLMProvider
 from .max_tokens import anthropic_max_tokens
@@ -105,7 +107,7 @@ class AnthropicProvider(LLMProvider):
                 return {"content": content, "usage": data.get("usage"), "error": False}
 
         except Exception as e:
-            return {"error": True, "error_message": str(e)}
+            return {"error": True, "error_message": describe_exception(e, timeout)}
 
     async def get_models(self) -> List[Dict[str, Any]]:
         api_key = self._get_api_key()

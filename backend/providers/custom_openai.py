@@ -1,6 +1,8 @@
 """Custom OpenAI-compatible endpoint provider."""
 
 import httpx
+
+from .errors import describe_exception
 from typing import List, Dict, Any
 from .base import LLMProvider
 from .temperature import add_temperature_if_supported
@@ -68,7 +70,7 @@ class CustomOpenAIProvider(LLMProvider):
         except httpx.ConnectError:
             return {"error": True, "error_message": f"Connection failed — check the {name} endpoint URL"}
         except Exception as e:
-            return {"error": True, "error_message": str(e) or repr(e)}
+            return {"error": True, "error_message": describe_exception(e, timeout)}
 
     async def get_models(self) -> List[Dict[str, Any]]:
         name, base_url, api_key = self._get_config()
