@@ -8,6 +8,8 @@ from typing import Any, Dict, List, Optional
 
 import httpx
 
+from .errors import describe_exception
+
 from ..credentials import get_oauth_credential, set_oauth_credential
 from ..oauth.github_copilot import fetch_copilot_account
 from ..oauth.refresh import get_valid_access_token
@@ -234,7 +236,7 @@ class GitHubCopilotProvider(LLMProvider):
                 content = data["choices"][0]["message"]["content"]
                 return {"content": content, "usage": data.get("usage"), "error": False}
         except Exception as e:
-            return {"error": True, "error_message": str(e)}
+            return {"error": True, "error_message": describe_exception(e, timeout)}
 
     async def get_models(self) -> List[Dict[str, Any]]:
         if not get_oauth_credential("github-copilot"):

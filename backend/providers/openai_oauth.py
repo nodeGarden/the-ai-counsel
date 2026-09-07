@@ -7,6 +7,8 @@ from typing import Any, Dict, List, Optional
 
 import httpx
 
+from .errors import describe_exception
+
 from ..credentials import get_oauth_credential
 from ..oauth.refresh import get_valid_access_token
 from .base import LLMProvider
@@ -178,7 +180,7 @@ class OpenAIOauthProvider(LLMProvider):
                         "error": False,
                     }
         except Exception as e:
-            return {"error": True, "error_message": str(e)}
+            return {"error": True, "error_message": describe_exception(e, timeout)}
 
     async def get_models(self) -> List[Dict[str, Any]]:
         if not get_oauth_credential("openai-oauth"):
