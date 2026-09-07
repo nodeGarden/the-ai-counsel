@@ -324,7 +324,7 @@ Provider utilities, model listing, and health checks.
 ```json
 {
   "backend": "reachable",
-  "base_url": "http://localhost:8001",
+  "base_url": "http://localhost:7001",
   "council_models": [...],
   "chairman_model": "...",
   "execution_mode": "full",

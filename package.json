@@ -1,0 +1,14 @@
+{
+  "name": "the-ai-counsel",
+  "version": "1.0.0",
+  "description": "",
+  "private": true,
+  "scripts": {
+    "dev:backend": "uv run python -m backend.main",
+    "dev:client": "cd frontend && npm run dev -- --host",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
