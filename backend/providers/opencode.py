@@ -27,6 +27,7 @@ import httpx
 from the_ai_counsel_mcp import __version__
 
 from ..settings import get_settings
+from .max_tokens import opencode_max_tokens
 from .base import LLMProvider
 
 logger = logging.getLogger(__name__)
@@ -187,7 +188,7 @@ class OpenCodeProvider(LLMProvider):
         payload: Dict[str, Any] = {
             "model": model,
             "messages": filtered_messages,
-            "max_tokens": 4096,
+            "max_tokens": opencode_max_tokens(),
             "temperature": temperature,
         }
         if system_message:
