@@ -35,6 +35,10 @@ DESIGN_SESSION_CONTEXT.md
 # Internal agent planning and design artifacts
 docs/superpowers/
 
+# Local agent working directory (PR drafts, roadmap, recovery scripts).
+# Upstream uses AGENTS.md / CLAUDE.md at the repo root and ships nothing here.
+.claude/
+
 # Auto Claude data directory
 .auto-claude/
 
