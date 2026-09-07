@@ -3,6 +3,7 @@
 import httpx
 from typing import List, Dict, Any
 from .base import LLMProvider
+from .max_tokens import anthropic_max_tokens
 from .temperature import add_temperature_if_supported
 from ..settings import get_settings
 
@@ -37,7 +38,9 @@ class AnthropicProvider(LLMProvider):
                 payload = {
                     "model": model,
                     "messages": filtered_messages,
-                    "max_tokens": 4096,
+                    # Reasoning models spend this budget on thinking before any
+                    # visible text, so 4096 could be exhausted mid-thought.
+                    "max_tokens": anthropic_max_tokens(),
                 }
                 add_temperature_if_supported(payload, model, "anthropic", temperature)
                 if system_message:
