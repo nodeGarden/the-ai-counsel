@@ -11,12 +11,15 @@ from backend.settings import Settings
 
 
 @pytest.fixture()
-def cred_file(tmp_path, monkeypatch):
+def cred_file(tmp_path, monkeypatch, fake_keyring):
     path = tmp_path / "credentials.json"
     monkeypatch.setattr(file_backend, "CREDENTIALS_FILE", path)
     monkeypatch.setattr(store, "get_effective_mode", lambda: "file")
     monkeypatch.setattr(store, "_preferred_mode", lambda: "file")
     monkeypatch.setattr(store, "ENV_OVERRIDES", {})
+    # fake_keyring is required: wipe_all_secrets() and delete_secret() clear
+    # BOTH backends regardless of mode. Without it, this test wipes the
+    # developer's real OS keyring credentials.
     yield path
 
 
