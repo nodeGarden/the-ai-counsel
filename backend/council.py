@@ -8,6 +8,7 @@ from .config import get_council_models, get_chairman_model
 from .costs import attach_cost
 from .settings import get_settings
 from .prompts import apply_response_language
+from .providers.timeouts import request_timeout
 
 logger = logging.getLogger(__name__)
 
@@ -50,27 +51,36 @@ PROVIDERS = {
     "github-copilot": GitHubCopilotProvider(),
 }
 
-def get_provider_for_model(model_id: str) -> Any:
-    """Determine the provider for a given model ID."""
+def get_provider_name_for_model(model_id: str) -> str:
+    """Provider key for a model ID, for per-provider configuration lookups."""
     if ":" in model_id:
         provider_name = model_id.split(":", 1)[0]
         if provider_name in PROVIDERS:
-            return PROVIDERS[provider_name]
+            return provider_name
+    return "openrouter"
 
-    # Default to OpenRouter for unprefixed models (legacy support)
-    return PROVIDERS["openrouter"]
+
+def get_provider_for_model(model_id: str) -> Any:
+    """Determine the provider for a given model ID."""
+    return PROVIDERS[get_provider_name_for_model(model_id)]
 
 
 async def query_model(
     model: str,
     messages: List[Dict[str, str]],
-    timeout: float = 120.0,
+    timeout: Optional[float] = None,
     temperature: float = 0.7,
     *,
     conversation_id: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """Dispatch query to appropriate provider."""
+    """Dispatch query to appropriate provider.
+
+    `timeout=None` resolves the configured per-provider timeout. Callers that
+    pass an explicit value keep it -- preflight deliberately uses a short one.
+    """
     provider = get_provider_for_model(model)
+    if timeout is None:
+        timeout = request_timeout(get_provider_name_for_model(model))
     if isinstance(provider, OpenCodeProvider):
         response = await provider.query(
             model,

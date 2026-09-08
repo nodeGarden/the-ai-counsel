@@ -1,6 +1,8 @@
 """Google Gemini provider implementation."""
 
 import httpx
+
+from .errors import describe_exception
 from typing import List, Dict, Any
 from .base import LLMProvider
 from ..settings import get_settings
@@ -66,7 +68,7 @@ class GoogleProvider(LLMProvider):
                     return {"error": True, "error_message": "Unexpected response format from Google API"}
                 
         except Exception as e:
-            return {"error": True, "error_message": str(e)}
+            return {"error": True, "error_message": describe_exception(e, timeout)}
 
     async def get_models(self) -> List[Dict[str, Any]]:
         api_key = self._get_api_key()
