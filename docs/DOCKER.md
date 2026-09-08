@@ -11,11 +11,11 @@ Pull the prebuilt image from GitHub Container Registry — no build step, no clo
 ```bash
 mkdir -p data
 docker run -d --restart unless-stopped --name the-ai-counsel \
-  -p 7001:7001 -v ./data:/app/data \
+  -p 8001:8001 -v ./data:/app/data \
   ghcr.io/jacob-bd/the-ai-counsel:latest
 ```
 
-Then open **http://localhost:7001** and configure your API keys in Settings.
+Then open **http://localhost:8001** and configure your API keys in Settings.
 
 Every push to `main` that passes the test suite publishes a fresh `:latest` image. When a matching release tag such as `v0.12.0` is pushed, the workflow also publishes `ghcr.io/jacob-bd/the-ai-counsel:0.12.0`, so you can pin to, or roll back to, a specific release instead of always tracking `latest`. Manually starting the workflow runs the tests for the selected ref but does not publish an image.
 
@@ -42,7 +42,7 @@ The rest of this guide uses `docker compose` commands (`logs`, `exec`, restarts)
 The container runs everything in one process:
 
 - The **React frontend** is compiled at build time and served as static files by the FastAPI backend.
-- The **FastAPI backend** listens on port `7001` and serves both the UI and all `/api/*` routes.
+- The **FastAPI backend** listens on port `8001` and serves both the UI and all `/api/*` routes.
 - A **startup script** (`docker-entrypoint.sh`) injects the runtime API URL into the frontend config before uvicorn starts.
 
 ---
@@ -81,20 +81,20 @@ Set these in a `.env` file in the project root, or inline in `docker-compose.yml
 
 | Variable | Default | Description |
 |---|---|---|
-| `PORT_BACKEND` | `7001` | Port the backend listens on, and the host port published by `docker-compose.yml`. |
-| `PORT_FRONTEND` | `7002` | Vite dev/preview server port. Not used by the container, which serves the built frontend from the backend port. |
+| `PORT_BACKEND` | `8001` | Port the backend listens on, and the host port published by `docker-compose.yml`. |
+| `PORT_FRONTEND` | `5173` | Vite dev/preview server port. Not used by the container, which serves the built frontend from the backend port. |
 | `BACKEND_HOST` | *(empty)* | Full URL of the backend, e.g. `https://api.example.com`. Leave empty when frontend and API share the same domain/port. |
 | `FRONTEND_HOST` | *(empty)* | Comma-separated allowed CORS origins, e.g. `https://council.example.com`. Leave empty when serving both from the same origin. |
 | `LLM_COUNCIL_ADMIN_TOKEN` | *(empty)* | Required for remote access to settings export/import/reset. When unset, those admin endpoints only accept direct loopback clients and reject proxied external clients. |
 | `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama endpoint. **Must be changed when using Docker** — see below. |
 | `FRONTEND_DIST_DIR` | `/app/frontend/dist` | Path to the compiled frontend. Do not change unless you know what you're doing. |
 
-`PORT_BACKEND` sets the port uvicorn listens on in both the local `python -m backend.main` dev launcher and the container (the entrypoint passes it to uvicorn, and `docker-compose.yml` publishes the same port on the host). `LLM_COUNCIL_BIND_HOST` controls the bind address for the dev launcher only; `LLM_COUNCIL_BIND_PORT` still works as a legacy override for `PORT_BACKEND`.
+`PORT_BACKEND` sets the port uvicorn listens on in both the local `python -m backend.main` dev launcher and the container (the entrypoint passes it to uvicorn, and `docker-compose.yml` publishes the same port on the host). When `BACKEND_HOST` is empty, the UI calls the API on the same origin as the page, so changing `PORT_BACKEND` at runtime does not require rebuilding the image. `LLM_COUNCIL_BIND_HOST` controls the bind address for the dev launcher only; `LLM_COUNCIL_BIND_PORT` still works as a legacy override for `PORT_BACKEND`.
 
 ### Example `.env`
 
 ```env
-# Leave both empty when accessing via http://YOUR_HOST_IP:7001
+# Leave both empty when accessing via http://YOUR_HOST_IP:8001
 BACKEND_HOST=
 FRONTEND_HOST=
 
@@ -128,13 +128,13 @@ extra_hosts:
 
 ## Reverse Proxy / Custom Domain
 
-Point your reverse proxy (nginx, Caddy, Traefik) to `http://127.0.0.1:7001`.
+Point your reverse proxy (nginx, Caddy, Traefik) to `http://127.0.0.1:8001`.
 
 ### Caddy example
 
 ```caddy
 council.example.com {
-    reverse_proxy 127.0.0.1:7001
+    reverse_proxy 127.0.0.1:8001
 }
 ```
 
@@ -146,7 +146,7 @@ server {
     server_name council.example.com;
 
     location / {
-        proxy_pass http://127.0.0.1:7001;
+        proxy_pass http://127.0.0.1:8001;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         # Required for SSE (streaming responses)
@@ -179,7 +179,7 @@ Settings export/import/reset are admin endpoints because settings exports includ
 docker pull ghcr.io/jacob-bd/the-ai-counsel:latest
 docker stop the-ai-counsel && docker rm the-ai-counsel
 docker run -d --restart unless-stopped --name the-ai-counsel \
-  -p 7001:7001 -v ./data:/app/data \
+  -p 8001:8001 -v ./data:/app/data \
   ghcr.io/jacob-bd/the-ai-counsel:latest
 ```
 
@@ -213,7 +213,7 @@ The `docker-compose.yml` sets `restart: unless-stopped`, so the container restar
 
 - The container runs as a non-root user (`appuser`) for reduced attack surface.
 - A healthcheck polls `/api/health` every 30 seconds. Docker will report the container as `unhealthy` if the backend stops responding, and `restart: unless-stopped` will restart it.
-- API keys and OAuth tokens are stored in plain text in `./data/credentials.json` (file mode only in Docker). See [`CREDENTIALS.md`](CREDENTIALS.md). Do not expose port `7001` to the public internet without authentication (use a reverse proxy with auth, or restrict access via firewall).
+- API keys and OAuth tokens are stored in plain text in `./data/credentials.json` (file mode only in Docker). See [`CREDENTIALS.md`](CREDENTIALS.md). Do not expose port `8001` to the public internet without authentication (use a reverse proxy with auth, or restrict access via firewall).
 
 ---
 
@@ -247,7 +247,7 @@ docker compose exec app whoami
 ### The frontend loads but API calls fail (CORS errors)
 
 You are likely accessing the app from a different origin than the one Docker is binding to. Either:
-- Access via `http://YOUR_HOST_IP:7001` (not `localhost` from another machine)
+- Access via `http://YOUR_HOST_IP:8001` (not `localhost` from another machine)
 - Or set `FRONTEND_HOST` and `BACKEND_HOST` appropriately for your split-origin setup
 
 ### Settings won't save / Permission denied on `/app/data/settings.json`

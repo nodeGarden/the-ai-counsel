@@ -29,9 +29,9 @@ npm run dev
 ```
 
 **Ports:**
-- Backend: `http://localhost:7001` (NOT 8000 - avoid conflicts)
-- Frontend: `http://localhost:7002`
-- MCP Server (SSE): Built-in at `/mcp` on the backend (`http://localhost:7001/mcp/sse`) — **10 action-based tools** (`council_deliberate`, `model_chat`, `advisor_debate`, `run_iterative_debate`, `council_settings`, `advisor_settings`, `personas`, `conversations`, `providers`, `config_backup`). See [`docs/mcp/TOOLS.md`](docs/mcp/TOOLS.md). `GET /api/health` reports `"mcp": {"tools": 10}`.
+- Backend: `http://localhost:8001` (NOT 8000 - avoid conflicts)
+- Frontend: `http://localhost:5173`
+- MCP Server (SSE): Built-in at `/mcp` on the backend (`http://localhost:8001/mcp/sse`) — **10 action-based tools** (`council_deliberate`, `model_chat`, `advisor_debate`, `run_iterative_debate`, `council_settings`, `advisor_settings`, `personas`, `conversations`, `providers`, `config_backup`). See [`docs/mcp/TOOLS.md`](docs/mcp/TOOLS.md). `GET /api/health` reports `"mcp": {"tools": 10}`.
 
 **Network Access:**
 ```bash
@@ -43,8 +43,8 @@ cd frontend && npm run dev -- --host
 ```
 
 **Port variables** (set in the root `.env`, see `.env.example`):
-- `PORT_BACKEND`: backend port, default `7001`. Read by the backend, the Vite config (injected into the frontend's API base URL), `start.sh`, and Docker.
-- `PORT_FRONTEND`: Vite dev/preview server port, default `7002`.
+- `PORT_BACKEND`: backend port, default `8001`. Read by the backend, Vite (local-dev API URL), `start.sh`, and Docker. Production/Docker uses the page origin when `BACKEND_HOST` is empty, so a runtime port change does not require rebuilding the frontend.
+- `PORT_FRONTEND`: Vite dev/preview server port, default `5173`.
 
 **Backend bind variables:**
 - `LLM_COUNCIL_BIND_HOST`: dev launcher bind host, default `127.0.0.1`. Use `0.0.0.0` only when you intentionally want LAN access.
@@ -192,9 +192,9 @@ useEffect(() => {
 
 ## Common Gotchas
 
-1. **Port Conflicts**: Backend uses 7001, frontend 7002. Both come from `PORT_BACKEND` / `PORT_FRONTEND` in the root `.env` — change them there, not in source.
+1. **Port Conflicts**: Backend uses 8001, frontend 5173. Both come from `PORT_BACKEND` / `PORT_FRONTEND` in the root `.env` — change them there, not in source.
 
-2. **CORS Errors**: Frontend origins must match `main.py` CORS middleware (localhost:7002 and :3000).
+2. **CORS Errors**: Frontend origins must match `main.py` CORS middleware (localhost:5173 and :3000).
 
 3. **Missing Metadata**: `label_to_model` and `aggregate_rankings` are ephemeral - only in API responses, not stored.
 

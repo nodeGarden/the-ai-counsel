@@ -22,10 +22,10 @@ Examples:
   python -m the_ai_counsel_mcp
 
   # Remote backend, stdio transport
-  python -m the_ai_counsel_mcp --base-url https://yourserver.com:{os.getenv('PORT_BACKEND', '7001')}
+  python -m the_ai_counsel_mcp --base-url https://yourserver.com:{os.getenv('PORT_BACKEND', '8001')}
 
   # Standalone SSE transport fallback (Note: SSE is built into the main uvicorn app
-  # at /mcp/sse on the backend port, {os.getenv('PORT_BACKEND', '7001')} by default!)
+  # at /mcp/sse on the backend port, {os.getenv('PORT_BACKEND', '8001')} by default!)
   python -m the_ai_counsel_mcp --transport sse --port 8002
         """,
     )

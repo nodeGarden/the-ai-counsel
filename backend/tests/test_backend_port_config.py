@@ -5,10 +5,19 @@ import pytest
 from backend.main import _resolve_backend_port
 
 
-def test_defaults_to_7001_when_unset(monkeypatch):
+def test_defaults_to_8001_when_unset(monkeypatch):
     monkeypatch.delenv("PORT_BACKEND", raising=False)
     monkeypatch.delenv("LLM_COUNCIL_BIND_PORT", raising=False)
-    assert _resolve_backend_port() == 7001
+    assert _resolve_backend_port() == 8001
+
+
+def test_mcp_default_base_url_follows_port_backend(monkeypatch):
+    monkeypatch.delenv("PORT_BACKEND", raising=False)
+    from the_ai_counsel_mcp.client import default_base_url
+
+    assert default_base_url() == "http://localhost:8001"
+    monkeypatch.setenv("PORT_BACKEND", "9500")
+    assert default_base_url() == "http://localhost:9500"
 
 
 def test_reads_port_backend(monkeypatch):
@@ -27,13 +36,13 @@ def test_legacy_bind_port_takes_precedence(monkeypatch):
 def test_blank_value_falls_back_to_default(monkeypatch):
     monkeypatch.delenv("LLM_COUNCIL_BIND_PORT", raising=False)
     monkeypatch.setenv("PORT_BACKEND", "   ")
-    assert _resolve_backend_port() == 7001
+    assert _resolve_backend_port() == 8001
 
 
 def test_surrounding_whitespace_is_tolerated(monkeypatch):
     monkeypatch.delenv("LLM_COUNCIL_BIND_PORT", raising=False)
-    monkeypatch.setenv("PORT_BACKEND", " 7001 ")
-    assert _resolve_backend_port() == 7001
+    monkeypatch.setenv("PORT_BACKEND", " 8001 ")
+    assert _resolve_backend_port() == 8001
 
 
 @pytest.mark.parametrize("bad", ["abc", "70000", "0", "-1"])

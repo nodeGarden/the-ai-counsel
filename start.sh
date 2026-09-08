@@ -13,8 +13,8 @@ if [ -f "$SCRIPT_DIR/.env" ]; then
   set +a
 fi
 
-PORT_BACKEND="${PORT_BACKEND:-7001}"
-PORT_FRONTEND="${PORT_FRONTEND:-7002}"
+export PORT_BACKEND="${PORT_BACKEND:-8001}"
+export PORT_FRONTEND="${PORT_FRONTEND:-5173}"
 
 BACKEND_URL="http://localhost:${PORT_BACKEND}"
 FRONTEND_URL="http://localhost:${PORT_FRONTEND}"

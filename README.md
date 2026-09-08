@@ -60,7 +60,7 @@ npm install --prefix frontend && \
 
 *(Note: `uv sync` installs the backend dependencies, `npm install --prefix frontend` installs the frontend dependencies, and `./start.sh` spins up both servers together).*
 
-Then open **http://localhost:7002** and configure your API keys (or subscription OAuth logins) in Settings.
+Then open **http://localhost:5173** and configure your API keys (or subscription OAuth logins) in Settings.
 
 > **Prerequisites:** Python 3.10+, Node.js 18+, [uv](https://docs.astral.sh/uv/)
 
@@ -293,15 +293,15 @@ cd frontend
 npm run dev
 ```
 
-Then open **http://localhost:7002** in your browser.
+Then open **http://localhost:5173** in your browser.
 
 ### Docker / VPS Deployment
 
 ```bash
-docker run -d --restart unless-stopped -p 7001:7001 -v ./data:/app/data ghcr.io/jacob-bd/the-ai-counsel:latest
+docker run -d --restart unless-stopped -p 8001:8001 -v ./data:/app/data ghcr.io/jacob-bd/the-ai-counsel:latest
 ```
 
-Then open **http://YOUR_SERVER_IP:7001**. Conversations and settings persist to `./data` automatically.
+Then open **http://YOUR_SERVER_IP:8001**. Conversations and settings persist to `./data` automatically.
 
 Building from source (e.g. for local changes) is still supported via `docker compose up -d --build`. For Ollama integration, reverse proxy setup, environment variables, and upgrade instructions, see **[docs/DOCKER.md](docs/DOCKER.md)**.
 
@@ -311,8 +311,8 @@ Building from source (e.g. for local changes) is still supported via `docker com
 
 The start script exposes both frontend and backend on the network automatically:
 
-- **Local:** `http://localhost:7002`
-- **Network:** `http://YOUR_IP:7002`
+- **Local:** `http://localhost:5173`
+- **Network:** `http://YOUR_IP:5173`
 
 For manual setup:
 ```bash
@@ -400,7 +400,7 @@ Deliberation tools also accept optional document inputs. Base64 files are extrac
 
 * **Option B: Remote SSE (Zero-install for containers/servers)**
   ```bash
-  claude mcp add --transport sse the-ai-counsel http://yourserver.com:7001/mcp/sse
+  claude mcp add --transport sse the-ai-counsel http://yourserver.com:8001/mcp/sse
   ```
 
 Then ask Claude: "check the council health" to verify the connection (`providers` → action `health`; expect 10 tools in `/api/health`).

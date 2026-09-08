@@ -13,7 +13,7 @@ import httpx
 
 def default_base_url() -> str:
     """Backend base URL, following PORT_BACKEND from the environment/.env."""
-    return f"http://localhost:{os.getenv('PORT_BACKEND', '7001')}"
+    return f"http://localhost:{os.getenv('PORT_BACKEND', '8001')}"
 
 
 class CouncilClient:

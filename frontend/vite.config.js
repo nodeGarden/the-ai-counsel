@@ -7,8 +7,8 @@ export default defineConfig(({ mode }) => {
   // Ports live in the repo-root .env so backend and frontend read the same values.
   const env = loadEnv(mode, path.resolve(import.meta.dirname, '..'), '')
 
-  const frontendPort = Number(env.PORT_FRONTEND) || 7002
-  const backendPort = Number(env.PORT_BACKEND) || 7001
+  const frontendPort = Number(env.PORT_FRONTEND) || 5173
+  const backendPort = Number(env.PORT_BACKEND) || 8001
 
   return {
     plugins: [react()],

@@ -4,8 +4,8 @@ WORKDIR /app
 
 ENV PYTHONUNBUFFERED=1 \
     FRONTEND_DIST_DIR=/app/frontend/dist \
-    PORT_BACKEND=7001 \
-    PORT_FRONTEND=7002
+    PORT_BACKEND=8001 \
+    PORT_FRONTEND=5173
 
 RUN groupadd --system appgroup \
     && useradd --system --gid appgroup --no-create-home appuser \
@@ -26,10 +26,10 @@ RUN chmod +x /app/docker-entrypoint.sh
 
 RUN chown -R appuser:appgroup /app
 
-EXPOSE 7001
+EXPOSE 8001
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
-    CMD python3 -c "import os, urllib.request; urllib.request.urlopen('http://localhost:%s/api/health' % os.getenv('PORT_BACKEND', '7001'))" || exit 1
+    CMD python3 -c "import os, urllib.request; urllib.request.urlopen('http://localhost:%s/api/health' % os.getenv('PORT_BACKEND', '8001'))" || exit 1
 
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
 CMD ["/app/.venv/bin/uvicorn", "backend.main:app", "--host", "0.0.0.0"]

@@ -25,7 +25,7 @@ EOF
 case "$*" in
   *uvicorn*)
     if [ "${*#*--port}" = "$*" ]; then
-      set -- "$@" --port "${PORT_BACKEND:-7001}"
+      set -- "$@" --port "${PORT_BACKEND:-8001}"
     fi
     ;;
 esac

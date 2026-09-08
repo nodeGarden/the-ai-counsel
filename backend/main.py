@@ -354,7 +354,7 @@ def _resolve_backend_port() -> int:
     """
     raw = (os.getenv("LLM_COUNCIL_BIND_PORT") or os.getenv("PORT_BACKEND") or "").strip()
     if not raw:
-        return 7001
+        return 8001
     try:
         port = int(raw)
     except ValueError:
